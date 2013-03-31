@@ -1,0 +1,33 @@
+
+
+<h3>
+
+</h3>
+<table class="calendar table table-bordered table-hover">
+    <caption>
+        <a class="btn btn-large" href="{% url 'item' item.id %}?month={{ month.prev|date:"n" }}&year={{ month.prev|date:"o" }}">
+            <i class="icon-chevron-left"></i>
+        </a>
+        {{ month.date|date:"F Y" }}
+        <a class="btn btn-large" href="{% url 'item' item.id %}?month={{ month.next|date:"n" }}&year={{ month.next|date:"o" }}">
+            <i class="icon-chevron-right"></i>
+        </a></caption>
+    <thead>
+    <tr>
+        {% for day in month.week %}
+            <th>{{ day }}</th>
+        {% endfor %}
+    </tr>
+    </thead>
+    <tbody>
+    {% for week in month.weeks %}
+        <tr>
+            {% for day in week %}
+                <td class="" id="{{ day.id }}" class="{{ day.class }}">
+                    {{ day.view_date|date:"d" }}
+                </td>
+            {% endfor %}
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>

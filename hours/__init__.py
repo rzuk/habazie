@@ -1,0 +1,1 @@
+VERBOSE_NAME_PLURAL='godzinki'
