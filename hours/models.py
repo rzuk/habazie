@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 import calendar
 import datetime
+from httplib import BAD_REQUEST
 
 from django.contrib import admin
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models as dm
 
 
@@ -22,6 +24,7 @@ class User(AbstractUser):
 class UserAccountAdmin(admin.ModelAdmin):
     pass
 
+
 admin.site.register(User, UserAccountAdmin)
 
 
@@ -36,6 +39,7 @@ class StuffCategory(dm.Model):
     def __unicode__(self):
         return self.name
 
+
 admin.site.register(StuffCategory)
 
 
@@ -45,7 +49,7 @@ class Stuff(dm.Model):
         verbose_name_plural = u'sprzęt'
 
     name = dm.CharField(max_length=50, null=True)
-    photo = dm.FileField(upload_to='stuff/',)
+    photo = dm.FileField(upload_to='stuff/', )
     category = dm.ForeignKey(StuffCategory)
 
     def __unicode__(self):
@@ -53,13 +57,13 @@ class Stuff(dm.Model):
 
     def reservations_in_month(self, year, month):
         start = datetime.datetime(year, month, 1)
-        end = datetime(year, month, calendar.monthrange(year, month)[1])
-        qs = self.reservation_set.filter(start_be)
-        pass
+        end = Calendar.add_month(year, month, 1)
+        return self.reservation_set.exclude(end__lt=start).exclude(start__gt=end)
 
 
 class StuffAdmin(admin.ModelAdmin):
     pass
+
 
 admin.site.register(Stuff, StuffAdmin)
 
@@ -81,22 +85,36 @@ class Reservation(dm.Model):
         verbose_name = u'rezerwacja'
         verbose_name_plural = u'rezerwacje'
 
-    stuff = dm.ForeignKey(Stuff)
-    start = dm.DateTimeField()
-    end = dm.DateTimeField()
-    user = dm.ForeignKey(User)
+    stuff = dm.ForeignKey(Stuff, verbose_name='sprzęt')
+    start = dm.DateTimeField(verbose_name='start')
+    end = dm.DateTimeField(verbose_name='koniec')
+    user = dm.ForeignKey(User, verbose_name=u'rezerwujący')
     status = dm.CharField(max_length=20, choices=ReservationStatus.choices())
-    cost = dm.DecimalField(max_digits=5, decimal_places=2, default=0)
-    supervisor_notes = dm.TextField()
+    cost = dm.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='koszt')
+    supervisor_notes = dm.TextField(blank=True, verbose_name='uwagi')
 
-admin.site.register(Reservation)
+    def clean(self):
+        if self.end - self.start > datetime.timedelta(days=28):
+            raise ValidationError('Reservations longer than 28 days are unsupported')
+
+
+class ReservationAdmin(admin.ModelAdmin):
+    list_display = 'stuff', 'user', 'status', 'supervisor_notes', 'start', 'end'
+    search_fields = 'stuff__name', 'user__pk', 'user__email'
+    list_filter = 'status', 'start', 'end'
+
+
+admin.site.register(Reservation, ReservationAdmin)
 
 
 class Price(dm.Model):
     class Meta:
         verbose_name = u'cena'
         verbose_name_plural = u'ceny'
+
     value = dm.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+
 admin.site.register(Price)
 
 
@@ -111,4 +129,105 @@ class SaldoChange(dm.Model):
     author = dm.ForeignKey(User, related_name='changes_done')
     note = dm.TextField()
     reservation = dm.ForeignKey(Reservation, null=True)
+
+
 admin.site.register(SaldoChange)
+
+
+class Calendar:
+    def __init__(self, year, month, user=None):
+        if not year and not month:
+            self.date = datetime.datetime.now()
+        elif year and month:
+            self.date = datetime.datetime(year=int(year), month=int(month), day=1)
+        else:
+            raise BAD_REQUEST
+
+        self.user = user
+
+        self.next = Calendar.add_month(self.date.year, self.date.month, +1)
+        self.prev = Calendar.add_month(self.date.year, self.date.month, -1)
+
+        self.week = [u'Poniedziałek', u'Wtorek', u'Środa', u'Czwartek', u'Piątek', u'Sobota', u'Niedziela']
+        self.days = []
+        self.weeks = []
+        self.__days_dict = {}
+        self.__generate_days()
+
+    def __generate_days(self):
+        for date in calendar.Calendar().itermonthdates(self.date.year, self.date.month):
+            day = Day(date, self)
+            self.days.append(day)
+            if day.view_date():
+                self.__days_dict[day.view_date().day] = day
+        self.weeks = chunks(self.days, 7)
+
+    def apply_reservations(self, reservations):
+        for day in self.days:
+            for reservation in reservations:
+                if reservation.start.date() <= day.date <= reservation.end.date():
+                    day.reservations.append(reservation)
+
+
+    @staticmethod
+    def add_month(year, month, delta):
+        month += delta
+        while month <= 0:
+            year -= 1
+            month += 12
+        while month > 12:
+            year += 1
+            month -= 12
+        return datetime.datetime(year=year, month=month, day=1)
+
+
+class Day:
+    def __init__(self, date, calendar):
+        self.date = date
+        self.calendar = calendar
+        self.year = calendar.date.year
+        self.month = calendar.date.month
+        self.reservations = []
+
+    def view_date(self):
+        if self.date.month != self.month:
+            return None
+        else:
+            return self.date
+
+    def get_class(self):
+        if not self.view_date():
+            return None
+
+        my_reservation_dict = {
+            'U': 'my_pending',
+            'A': 'my_accepted',
+            'C': 'free',
+            'D': 'free',
+        }
+        reservation_dict = {
+            'U': 'pending',
+            'A': 'accepted',
+            'C': 'free',
+            'D': 'free',
+        }
+
+        for reservation in self.reservations:
+            if reservation.user == self.calendar.user:
+                return my_reservation_dict[reservation.status]
+            else:
+                return reservation_dict[reservation.status]
+
+        return 'free'
+
+
+def zero_to_null(l):
+    return [None if x == 0 else x for x in l]
+
+
+def chunks(l, n):
+    """ Yield successive n-sized chunks from l.
+    """
+    l = list(l)
+    for i in xrange(0, len(l), n):
+        yield l[i:i + n]

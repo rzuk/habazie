@@ -1,0 +1,19 @@
+.calendar .free {
+    background-color: #dfffc1;
+}
+
+.calendar .pending {
+    background-color: lightgoldenrodyellow;
+}
+
+.calendar .accepted {
+    background-color: lightsalmon;
+}
+
+.calendar .my_accepted {
+    background-color: #9fff82;
+}
+
+.calendar .my_pending {
+    background-color: #ffea9d;
+}

@@ -1,33 +1,81 @@
-
-
 <h3>
 
 </h3>
-<table class="calendar table table-bordered table-hover">
-    <caption>
-        <a class="btn btn-large" href="{% url 'item' item.id %}?month={{ month.prev|date:"n" }}&year={{ month.prev|date:"o" }}">
-            <i class="icon-chevron-left"></i>
-        </a>
-        {{ month.date|date:"F Y" }}
-        <a class="btn btn-large" href="{% url 'item' item.id %}?month={{ month.next|date:"n" }}&year={{ month.next|date:"o" }}">
-            <i class="icon-chevron-right"></i>
-        </a></caption>
-    <thead>
-    <tr>
-        {% for day in month.week %}
-            <th>{{ day }}</th>
-        {% endfor %}
-    </tr>
-    </thead>
-    <tbody>
-    {% for week in month.weeks %}
-        <tr>
-            {% for day in week %}
-                <td class="" id="{{ day.id }}" class="{{ day.class }}">
-                    {{ day.view_date|date:"d" }}
-                </td>
+
+<div class="row">
+    <div class="span6">
+        <table class="calendar table table-bordered">
+            <caption>
+                <a class="btn btn-large"
+                   href="{% url 'item' item.id %}?month={{ month.prev|date:"n" }}&year={{ month.prev|date:"o" }}">
+                    <i class="icon-chevron-left"></i>
+                </a>
+                {{ month.date|date:"F Y" }}
+                <a class="btn btn-large"
+                   href="{% url 'item' item.id %}?month={{ month.next|date:"n" }}&year={{ month.next|date:"o" }}">
+                    <i class="icon-chevron-right"></i>
+                </a></caption>
+            <thead>
+            <tr>
+                {% for day in month.week %}
+                    <th>{{ day }}</th>
+                {% endfor %}
+            </tr>
+            </thead>
+            <tbody>
+            {% for week in month.weeks %}
+                <tr>
+                    {% for day in week %}
+                        <td id="{{ day.id }}" class=" {{ day.get_class }}">
+                            {{ day.view_date|date:"d" }}
+                        </td>
+                    {% endfor %}
+                </tr>
             {% endfor %}
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
+            </tbody>
+        </table>
+    </div>
+
+
+    <div class="accordion span4" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#accordion2"
+                   href="#collapseOne">
+                    Objaśnienie
+                </a>
+            </div>
+            <div id="collapseOne" class="accordion-body collapse in">
+                <div class="accordion-inner">
+                    <table class="calendar table">
+                        <tr>
+                            <td>kolor</td>
+                            <td>znaczenie</td>
+                        </tr>
+                        <tr>
+                            <td class="free"></td>
+                            <td>Wolny</td>
+                        </tr>
+                        <tr>
+                            <td class="accepted"></td>
+                            <td>Zarezerwowane przez kogoś innego</td>
+                        </tr>
+                        <tr>
+                            <td class="pending"></td>
+                            <td>Ktoś inny złożył prośbę o rezerwację</td>
+                        </tr>
+                        <tr>
+                            <td class="my_accepted"></td>
+                            <td>Zarezerwowane przez Ciebie</td>
+                        </tr>
+                        <tr>
+                            <td class="my_pending"></td>
+                            <td>Złożyłeś prośbę o rejestrację</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>

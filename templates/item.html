@@ -1,9 +1,37 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2> {{ item.category.name }} - {{ item.name }} </h2>
-</div>
+    <h2> {{ item.category.name }} - {{ item.name }} </h2>
 
-{% include "calendar.html" %}
+    {% include "calendar.html" %}
+
+    <table class="table table-bordered">
+        <caption>Rezerwacje</caption>
+        <thead>
+        <tr>
+            <th>Kto</th>
+            <th>Początek</th>
+            <th>Koniec</th>
+            <th>Status</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for reservation in reservations %}
+            <tr>
+                <td>
+                    {{ reservation.user }}
+                </td>
+                <td>{{ reservation.start|date }}</td>
+                <td>{{ reservation.end|date }}</td>
+                <td>{{ reservation.status }}</td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="4">Brak rezerwacji</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+
+    </table>
 
 {% endblock %}
