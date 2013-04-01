@@ -6,6 +6,7 @@ from httplib import BAD_REQUEST
 from django.contrib import admin
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models as dm
 
 
@@ -79,6 +80,15 @@ class ReservationStatus:
         return (ReservationStatus.unconfirmed, ReservationStatus.accepted,
                 ReservationStatus.cancelled, ReservationStatus.done)
 
+    @staticmethod
+    def as_dict():
+        return dict(ReservationStatus.choices())
+
+    @staticmethod
+    def check_status(value):
+        if value not in ReservationStatus.as_dict():
+            raise ValidationError(u'Niewłaściwy status rezerwacji.')
+
 
 class Reservation(dm.Model):
     class Meta:
@@ -89,17 +99,32 @@ class Reservation(dm.Model):
     start = dm.DateTimeField(verbose_name='start')
     end = dm.DateTimeField(verbose_name='koniec')
     user = dm.ForeignKey(User, verbose_name=u'rezerwujący')
-    status = dm.CharField(max_length=20, choices=ReservationStatus.choices())
+    status = dm.CharField(max_length=20, choices=ReservationStatus.choices(), default=ReservationStatus.unconfirmed[0],
+                          validators=[ReservationStatus.check_status])
     cost = dm.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='koszt')
     supervisor_notes = dm.TextField(blank=True, verbose_name='uwagi')
+    date = dm.DateTimeField(verbose_name='data rezerwacji')
 
     def clean(self):
+        if self.start > self.end:
+            raise ValidationError(u'Rezerwacja nie może kończyć się później niż zaczynać http://localhost:8000/admin/hours/reservation/1/')
         if self.end - self.start > datetime.timedelta(days=28):
-            raise ValidationError('Reservations longer than 28 days are unsupported')
+            raise ValidationError(u'Sprzęt można rezerwować na maksymalnie 28 dni')
+
+    def create_reservation(self, stuff, user, start, end):
+        reservation = Reservation(stuff=stuff, user=user, start=start, end=end)
+        reservation.cost = stuff.category.price.value
+        reservation.data = datetime.time.now()
+        return reservation
+
+    def confirm_reservation(self, notes=None):
+        if notes:
+            self.supervisor_notes = notes
+        self.status = ReservationStatus.accepted[0]
 
 
 class ReservationAdmin(admin.ModelAdmin):
-    list_display = 'stuff', 'user', 'status', 'supervisor_notes', 'start', 'end'
+    list_display = 'stuff', 'user', 'status', 'supervisor_notes', 'start', 'end', 'date'
     search_fields = 'stuff__name', 'user__pk', 'user__email'
     list_filter = 'status', 'start', 'end'
 
@@ -112,8 +137,7 @@ class Price(dm.Model):
         verbose_name = u'cena'
         verbose_name_plural = u'ceny'
 
-    value = dm.DecimalField(max_digits=5, decimal_places=2, default=0)
-
+    value = dm.DecimalField(max_digits=5, decimal_places=2, default=0, validators=[MinValueValidator(0)])
 
 admin.site.register(Price)
 
