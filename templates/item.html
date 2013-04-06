@@ -5,6 +5,37 @@
 
     {% include "calendar.html" %}
 
+    {% block reservations_managment %}
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#accordion2"
+                   href="#collapseTwo">
+                    Złóż nową rezerwację
+                </a>
+            </div>
+            <div id="collapseTwo" class="accordion-body collapse {% if create_form.display %}in{% endif %}">
+                <div class="accordion-inner">
+                    <form action="{% url 'item' item.id %}" method="post">
+                        {% csrf_token %}
+                        {{ create_form }}
+                        <input name="create" type="submit" value="Rezerwuj" />
+                        <script type="text/javascript">
+                            $(function() {
+                                $('#id_start_0').datepicker()
+                                $('#id_end_0').datepicker()
+                                $('.errorlist li').addClass('alert')
+                            })
+                        </script>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endblock %}
+
     <table class="table table-bordered">
         <caption>Rezerwacje</caption>
         <thead>
@@ -13,6 +44,7 @@
             <th>Początek</th>
             <th>Koniec</th>
             <th>Status</th>
+            <th>Edytuj/usuń</th>
         </tr>
         </thead>
         <tbody>
@@ -21,9 +53,17 @@
                 <td>
                     {{ reservation.user }}
                 </td>
-                <td>{{ reservation.start|date }}</td>
-                <td>{{ reservation.end|date }}</td>
+                <td>{{ reservation.start|date:"d.m.Y H:i" }}</td>
+                <td>{{ reservation.end|date:"d.m.Y H:i" }}</td>
                 <td>{{ reservation.status }}</td>
+                <td>
+                    {% if user == reservation.user %}
+                        <a class="btn btn-small" href="{% url 'manage_reservation' reservation.id %}">
+                            <i class="icon-arrow-right"></i>
+                        </a>
+                    {% endif %}
+
+                </td>
             </tr>
         {% empty %}
             <tr>
@@ -33,5 +73,7 @@
         </tbody>
 
     </table>
+
+    <img src="{{ item.photo.url }}" alt="zdjęcie" />
 
 {% endblock %}

@@ -17,3 +17,7 @@
 .calendar .my_pending {
     background-color: #ffea9d;
 }
+
+.calendar .pending.my_pending {
+    background: lightgoldenrodyellow repeating-linear-gradient(45deg, transparent, transparent 20px, #ffea9d 20px, #ffea9d 40px);
+}

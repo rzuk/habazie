@@ -4,24 +4,21 @@
 <h2>Lista sprzętu:</h2>
 <div class="tabbable">
     <ul class="nav nav-tabs">
-        <li class="active"><a href="#tab1" data-toggle="tab">Kajaki górskie</a></li>
-        <li><a href="#tab2" data-toggle="tab">Kajaki nizinne</a></li>
-        <li><a href="#tab3" data-toggle="tab">Kanady</a></li>
-{#            <li><a href="#tab4" data-toggle="tab">Wiosła</a></li>#}
-{#            <li><a href="#tab5" data-toggle="tab">Rzutki</a></li>#}
-{#            <li><a href="#tab6" data-toggle="tab">Kaski</a></li>#}
-{#            <li><a href="#tab7" data-toggle="tab">Kamizelki</a></li>#}
-{#            <li><a href="#tab8" data-toggle="tab">Fartuchy</a></li>#}
+{#        <li class="active"><a href="#tab1" data-toggle="tab">Kajaki górskie</a></li>#}
+        {% for category in categories %}
+            <li {% if forloop.first %}class="active"{% endif %}><a href="#tab{{ category.id }}" data-toggle="tab">{{ category.name }}</a></li>
+        {% endfor %}
     </ul>
     <div class="tab-content">
-        <div class="tab-pane active" id="tab1">
+        {% for category in categories %}
+        <div class="tab-pane {% if forloop.first %}active{% endif %}" id="tab{{ category.id }}">
             <table class="table">
             <tr>
                 <th>nazwa</th>
                 <th>cena</th>
                 <th>dostępność</th>
             </tr>
-            {% for item in stuff %}
+            {% for item in category.stuff_set.all %}
                 <tr>
                     <td>{{ item }}</td>
                     <td>{{ item.category.price.value }}</td>
@@ -30,8 +27,9 @@
             {% endfor %}
             </table>
         </div>
-        <div class="tab-pane" id="tab2">Kajaki nizinne</div>
-        <div class="tab-pane" id="tab3">Kanady</div>
+        {% endfor %}
+{#        <div class="tab-pane" id="tab2">Kajaki nizinne</div>#}
+{#        <div class="tab-pane" id="tab3">Kanady</div>#}
     </div>
 </div>
 

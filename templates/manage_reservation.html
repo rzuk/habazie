@@ -1,0 +1,19 @@
+{% extends "item.html" %}
+
+{% block reservations_managment %}
+
+<h3>Edytuj rezerwację</h3>
+<form action="{% url 'manage_reservation' reservation.id %}" method="post">
+    {% csrf_token %}
+    {{ edit_form }}
+    <input name="edit" type="submit" value="Zapisz" />
+    <script type="text/javascript">
+        $(function() {
+            $('#id_start_0').datepicker()
+            $('#id_end_0').datepicker()
+            $('.errorlist li').addClass('alert')
+        })
+    </script>
+</form>
+
+{% endblock %}

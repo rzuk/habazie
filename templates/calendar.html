@@ -26,7 +26,7 @@
             {% for week in month.weeks %}
                 <tr>
                     {% for day in week %}
-                        <td id="{{ day.id }}" class=" {{ day.get_class }}">
+                        <td id="{{ day.id }}" class=" {{ day.get_classes }}">
                             {{ day.view_date|date:"d" }}
                         </td>
                     {% endfor %}
@@ -37,10 +37,10 @@
     </div>
 
 
-    <div class="accordion span4" id="accordion2">
+    <div class="accordion span4" id="accordion1">
         <div class="accordion-group">
             <div class="accordion-heading">
-                <a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#accordion2"
+                <a class="accordion-toggle collapsed" data-toggle="collapse" data-parent="#accordion1"
                    href="#collapseOne">
                     Objaśnienie
                 </a>

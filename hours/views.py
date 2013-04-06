@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
+from datetime import datetime, date
 from django.contrib.auth.decorators import login_required
+from django.core.urlresolvers import reverse
 from django.http import HttpResponse
-from django.template import Context, loader
-from hours.models import Stuff, Calendar
+from django.http.response import HttpResponseRedirect
+from django.template import loader, RequestContext
+from django.utils.http import urlencode
+from hours.forms import ReservationForm, ReservationEditionForm
+from hours.models import Stuff, StuffCategory, Reservation
+from hours.utils import Calendar
 
 
 @login_required
@@ -16,6 +22,7 @@ def my_account(request):
 def stuff(request):
     context = __base_context(request)
     context.update(dict(stuff=Stuff.objects.all(),
+                        categories=StuffCategory.objects.all(),
                         current='stuff'))
     template = loader.get_template('stuff.html')
     return HttpResponse(template.render(context))
@@ -24,20 +31,61 @@ def stuff(request):
 @login_required()
 def item(request, item_id):
     context = __base_context(request)
+    item_obj = Stuff.objects.get(id=item_id)
+    if 'create' in request.POST:
+        create_form = ReservationForm(request.POST)
+        if create_form.save_instance(item=item_obj, user=request.user):
+            return HttpResponseRedirect(reverse(item, args=[item_obj.id]))
+        else:
+            create_form.display = True
+    else:
+        instance = Reservation(start=_today(0, 0), end=_today(23,59))
+        create_form = ReservationForm(instance=instance)
     calendar = Calendar(request.REQUEST.get('year', None),
                         request.REQUEST.get('month', None),
-                        request.user
-    )
-    item = Stuff.objects.get(id=item_id)
-    reservations = item.reservations_in_month(calendar.date.year, calendar.date.month)
+                        request.user)
+    reservations = item_obj.reservations_in_month(calendar.date.year, calendar.date.month)
     calendar.apply_reservations(reservations)
     context.update(dict(
-        item=item,
+        item=item_obj,
         month=calendar,
         reservations=reservations,
         current='stuff',
+        create_form=create_form
     ))
     template = loader.get_template('item.html')
+
+    return HttpResponse(template.render(context))
+
+
+@login_required()
+def manage_reservation(request, reservation_id):
+    context = __base_context(request)
+    instance = Reservation.objects.prefetch_related('stuff').get(pk=reservation_id)
+    item_obj = instance.stuff
+    if 'edit' in request.POST:
+        edit_form = ReservationEditionForm(request.POST, instance=instance)
+        if edit_form.save_instance(item=item_obj, user=request.user):
+            return HttpResponseRedirect('%s?%s' % (reverse(item, args=[item_obj.id]),
+                                                   urlencode({'msg': u'Zapisano zmiany',
+                                                              'msg_class': 'alert-success'})))
+    else:
+        edit_form = ReservationForm(instance=instance)
+    calendar = Calendar(request.REQUEST.get('year', instance.start.year),
+                        request.REQUEST.get('month', instance.start.month),
+                        request.user)
+    reservations = item_obj.reservations_in_month(calendar.date.year, calendar.date.month)
+    calendar.apply_reservations(reservations)
+    context.update(dict(
+        item=item_obj,
+        month=calendar,
+        reservations=reservations,
+        reservation=instance,
+        current='stuff',
+        edit_form=edit_form
+    ))
+    template = loader.get_template('manage_reservation.html')
+
     return HttpResponse(template.render(context))
 
 
@@ -76,8 +124,22 @@ def __main_pages():
 
 
 def __base_context(request):
-    return Context({
+    return RequestContext(request, {
         'user': request.user,
         'current': 'index',
-        'pages': __main_pages()
+        'pages': __main_pages(),
+        'msg': request.REQUEST.get('msg', None),
+        'msg_class': request.REQUEST.get('msg_class', None)
     })
+
+
+def _today(hour, minute):
+    today = date.today()
+    return datetime(
+        year=today.year,
+        month=today.month,
+        day=today.day,
+        hour=hour,
+        minute=minute
+    )
+

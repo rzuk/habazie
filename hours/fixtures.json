@@ -1,0 +1,66 @@
+[
+    {
+        "model": "hours.StuffCategory",
+        "pk": 1,
+        "fields": {
+            "name": "Kajak górski",
+            "price": 20
+        }
+    },
+    {
+        "model": "hours.StuffCategory",
+        "pk": 2,
+        "fields": {
+            "name": "Nizinna jedynka",
+            "price": 20
+        }
+    },
+    {
+        "model": "hours.StuffCategory",
+        "pk": 3,
+        "fields": {
+            "name": "Nizinna dwójka/kanada",
+            "price": 40
+        }
+    },
+    {
+        "model": "hours.StuffCategory",
+        "pk": 4,
+        "fields": {
+            "name": "Kask",
+            "price": 5
+        }
+    },
+    {
+        "model": "hours.StuffCategory",
+        "pk": 5,
+        "fields": {
+            "name": "Fartuch neoprenowy",
+            "price": 10
+        }
+    },
+    {
+        "model": "hours.StuffCategory",
+        "pk": 6,
+        "fields": {
+            "name": "Fartuch tekstylny",
+            "price": 5
+        }
+    },
+    {
+        "model": "hours.StuffCategory",
+        "pk": 7,
+        "fields": {
+            "name": "Kamizelka",
+            "price": 5
+        }
+    },
+    {
+        "model": "hours.StuffCategory",
+        "pk": 7,
+        "fields": {
+            "name": "Wiosło",
+            "price": 5
+        }
+    }
+]

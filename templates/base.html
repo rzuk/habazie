@@ -8,6 +8,9 @@
     <meta name="author" content="">
 
     <!-- Le styles -->
+
+    <script src="/static/js/jquery-1.9.1.js"></script>
+    <link href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" rel="stylesheet">
     <link href="/static/css/bootstrap.css" rel="stylesheet">
     <link href="/static/style.css" rel="stylesheet">
     <style>
@@ -47,6 +50,12 @@
                         {#                    <li class=""><a href="#">Rezerwacje</a></li>#}
                         {#                    <li class=""><a href="#">Godzinki</a></li>#}
                     {% endfor %}
+                    {% if user.is_staff %}
+                        <li>
+                            <a href="{% url 'admin:index' %}">Panel administracyjny</a>
+                        </li>
+
+                    {% endif %}
                     {#                    {% if user.is_authenticated  %}#}
                     {#                    <li class="pull-right"><a href="{% url 'logout' %}">wyloguj</a></li>#}
                     {#                    {% endif %}#}
@@ -65,6 +74,12 @@
     </div>
 </div>
 
+{% if msg %}
+    <div class="alert {{ msg_class|default:"alert-info" }}">
+        {{ msg }}
+    </div>
+{% endif %}
+
 <div id="content" class="container">
     {% block content %}{% endblock %}
 </div>
@@ -73,16 +88,6 @@
 <!-- Le javascript
 ================================================== -->
 <!-- Placed at the end of the document so the pages load faster -->
-<script src="/static/js/jquery-1.9.1.js"></script>
 <script src="/static/js/bootstrap.js"></script>
-{#<script src="/static/js/bootstrap-alert.js"></script>#}
-{#<script src="/static/js/bootstrap-modal.js"></script>#}
-{#<script src="/static/js/bootstrap-dropdown.js"></script>#}
-{#<script src="/static/js/bootstrap-scrollspy.js"></script>#}
-{#<script src="/static/js/bootstrap-tab.js"></script>#}
-{#<script src="/static/js/bootstrap-tooltip.js"></script>#}
-{#<script src="/static/js/bootstrap-popover.js"></script>#}
-{#<script src="/static/js/bootstrap-button.js"></script>#}
-{#<script src="/static/js/bootstrap-collapse.js"></script>#}
-{#<script src="/static/js/bootstrap-carousel.js"></script>#}
-{#<script src="/static/js/bootstrap-typeahead.js"></script>#}
+<script src="/static/js/jquery-ui-pl.js"></script>
+<script src="http://code.jquery.com/ui/1.10.2/jquery-ui.js"></script>

@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-import calendar
 import datetime
-from httplib import BAD_REQUEST
 
 from django.contrib import admin
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models as dm
+from hours.utils import Calendar
 
 
 class User(AbstractUser):
@@ -35,7 +34,7 @@ class StuffCategory(dm.Model):
         verbose_name_plural = u'rodzaje sprzętu'
 
     name = dm.CharField(max_length=100)
-    price = dm.OneToOneField('hours.Price')
+    price = dm.DecimalField(max_digits=5, decimal_places=2, default=0, validators=[MinValueValidator(0)])
 
     def __unicode__(self):
         return self.name
@@ -102,18 +101,32 @@ class Reservation(dm.Model):
     status = dm.CharField(max_length=20, choices=ReservationStatus.choices(), default=ReservationStatus.unconfirmed[0],
                           validators=[ReservationStatus.check_status])
     cost = dm.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='koszt')
-    supervisor_notes = dm.TextField(blank=True, verbose_name='uwagi')
+    supervisor_notes = dm.TextField(blank=True, verbose_name=u'uwagi sprzętowca')
+    user_notes = dm.TextField(blank=True, verbose_name=u'uwagi')
     date = dm.DateTimeField(verbose_name='data rezerwacji')
 
     def clean(self):
+        if not self.start or not self.end:
+            raise ValidationError(u'Błąd!')
         if self.start > self.end:
             raise ValidationError(u'Rezerwacja nie może kończyć się później niż zaczynać http://localhost:8000/admin/hours/reservation/1/')
         if self.end - self.start > datetime.timedelta(days=28):
             raise ValidationError(u'Sprzęt można rezerwować na maksymalnie 28 dni')
 
+        try:
+            self.__check_doesnt_overlap_accepted()
+            self.__check_doesnt_overlap_mine()
+
+            if self.pk:
+                instance = Reservation.objects.get(self.pk)
+                self.__check_only_first_accpted(instance)
+                self.__check_cant_change_done(instance)
+        except NotImplementedError:
+            pass
+
     def create_reservation(self, stuff, user, start, end):
         reservation = Reservation(stuff=stuff, user=user, start=start, end=end)
-        reservation.cost = stuff.category.price.value
+        reservation.cost = stuff.category.price
         reservation.data = datetime.time.now()
         return reservation
 
@@ -121,6 +134,33 @@ class Reservation(dm.Model):
         if notes:
             self.supervisor_notes = notes
         self.status = ReservationStatus.accepted[0]
+
+    def __check_doesnt_overlap_accepted(self):
+        """
+        Cannot create reservation if overlaps accepted/done one.
+        """
+        raise NotImplementedError()
+
+    def __check_doesnt_overlap_mine(self):
+        """
+        Cannot create reservation that overlaps another reservation for
+        sam user.
+        """
+        raise NotImplementedError()
+
+    def __check_only_first_accepted(self, instance):
+        """
+        If there are two or more overlapping pending reservations,
+        only first may be accepted.
+        Stuff manager should cancel previous reservations, and then accept selected one
+        """
+        raise NotImplementedError()
+
+    def __check_cant_change_done(self, instance):
+        """
+        If reservation is marked as done, it's immutable.
+        """
+        raise NotImplementedError()
 
 
 class ReservationAdmin(admin.ModelAdmin):
@@ -130,16 +170,6 @@ class ReservationAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Reservation, ReservationAdmin)
-
-
-class Price(dm.Model):
-    class Meta:
-        verbose_name = u'cena'
-        verbose_name_plural = u'ceny'
-
-    value = dm.DecimalField(max_digits=5, decimal_places=2, default=0, validators=[MinValueValidator(0)])
-
-admin.site.register(Price)
 
 
 class SaldoChange(dm.Model):
@@ -154,104 +184,14 @@ class SaldoChange(dm.Model):
     note = dm.TextField()
     reservation = dm.ForeignKey(Reservation, null=True)
 
+    def create_change(self, user, author, note=None, value=None, reservation=None):
+        if reservation and value:
+            raise ValidationError(u'Zmiana dotycząca rezerwacji ma automatyczną liczbę godzinek.')
+        if reservation:
+            value = reservation.cost
+        change = SaldoChange(user=user, value=value, author=author, note=note, reservation=reservation)
+        user.saldo += value
+        return change
+
 
 admin.site.register(SaldoChange)
-
-
-class Calendar:
-    def __init__(self, year, month, user=None):
-        if not year and not month:
-            self.date = datetime.datetime.now()
-        elif year and month:
-            self.date = datetime.datetime(year=int(year), month=int(month), day=1)
-        else:
-            raise BAD_REQUEST
-
-        self.user = user
-
-        self.next = Calendar.add_month(self.date.year, self.date.month, +1)
-        self.prev = Calendar.add_month(self.date.year, self.date.month, -1)
-
-        self.week = [u'Poniedziałek', u'Wtorek', u'Środa', u'Czwartek', u'Piątek', u'Sobota', u'Niedziela']
-        self.days = []
-        self.weeks = []
-        self.__days_dict = {}
-        self.__generate_days()
-
-    def __generate_days(self):
-        for date in calendar.Calendar().itermonthdates(self.date.year, self.date.month):
-            day = Day(date, self)
-            self.days.append(day)
-            if day.view_date():
-                self.__days_dict[day.view_date().day] = day
-        self.weeks = chunks(self.days, 7)
-
-    def apply_reservations(self, reservations):
-        for day in self.days:
-            for reservation in reservations:
-                if reservation.start.date() <= day.date <= reservation.end.date():
-                    day.reservations.append(reservation)
-
-
-    @staticmethod
-    def add_month(year, month, delta):
-        month += delta
-        while month <= 0:
-            year -= 1
-            month += 12
-        while month > 12:
-            year += 1
-            month -= 12
-        return datetime.datetime(year=year, month=month, day=1)
-
-
-class Day:
-    def __init__(self, date, calendar):
-        self.date = date
-        self.calendar = calendar
-        self.year = calendar.date.year
-        self.month = calendar.date.month
-        self.reservations = []
-
-    def view_date(self):
-        if self.date.month != self.month:
-            return None
-        else:
-            return self.date
-
-    def get_class(self):
-        if not self.view_date():
-            return None
-
-        my_reservation_dict = {
-            'U': 'my_pending',
-            'A': 'my_accepted',
-            'C': 'free',
-            'D': 'free',
-        }
-        reservation_dict = {
-            'U': 'pending',
-            'A': 'accepted',
-            'C': 'free',
-            'D': 'free',
-        }
-
-        for reservation in self.reservations:
-            if reservation.user == self.calendar.user:
-                return my_reservation_dict[reservation.status]
-            else:
-                return reservation_dict[reservation.status]
-
-        return 'free'
-
-
-def zero_to_null(l):
-    return [None if x == 0 else x for x in l]
-
-
-def chunks(l, n):
-    """ Yield successive n-sized chunks from l.
-    """
-    l = list(l)
-    for i in xrange(0, len(l), n):
-        yield l[i:i + n]
