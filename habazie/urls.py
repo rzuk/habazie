@@ -12,7 +12,8 @@ urlpatterns = patterns('',
                        url(r'^logout$', 'django.contrib.auth.views.logout_then_login', name='logout'),
                        url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
                        url(r'^admin/', include(admin.site.urls)),
-                       url(r'^', include('hours.urls'))
+                       url(r'^accounts/', include('facebook.urls')),
+                       url(r'^', include('hours.urls')),
 )
 
 urlpatterns += staticfiles_urlpatterns()

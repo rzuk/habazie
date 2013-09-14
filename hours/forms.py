@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from datetime import datetime
 from django.forms.widgets import SplitDateTimeWidget, HiddenInput, TextInput
 from hours.models import Reservation
@@ -55,3 +56,9 @@ class ReservationEditionForm(forms.ModelForm):
             reservation.date = datetime.now()
             reservation.save()
             return True
+
+
+class ReturnSingleStuffForm(forms.Form):
+
+    checked = forms.BooleanField()
+    days = forms.IntegerField()

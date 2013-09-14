@@ -6,6 +6,9 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models as dm
+from django.db.models import Q
+from django.utils import timezone
+from django_facebook.models import FacebookProfileModel
 from hours.utils import Calendar
 
 
@@ -15,7 +18,6 @@ class User(AbstractUser):
         verbose_name_plural = u'użytkownicy'
 
     saldo = dm.DecimalField(max_digits=5, decimal_places=2, default=0)
-    nick = dm.CharField(max_length=20, default='')
 
     def change_saldo(self, value, note=None, reservation=None):
         pass
@@ -66,6 +68,13 @@ class StuffAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Stuff, StuffAdmin)
+
+
+class ReservationError(Exception):
+
+    def __init__(self, msg, witness):
+        self.witness = witness
+        super(ReservationError, self).__init__(msg)
 
 
 class ReservationStatus:
@@ -139,7 +148,13 @@ class Reservation(dm.Model):
         """
         Cannot create reservation if overlaps accepted/done one.
         """
-        raise NotImplementedError()
+
+        doesnt_overlap = (Q(end__lt=self.start) | Q(start__gt=self.end))
+        accepted_overlapping = Reservation.objects.filter(
+            ~doesnt_overlap,
+            status=ReservationStatus.accepted[0]).all()
+        if accepted_overlapping:
+            raise Exception()
 
     def __check_doesnt_overlap_mine(self):
         """
@@ -162,11 +177,36 @@ class Reservation(dm.Model):
         """
         raise NotImplementedError()
 
+    def is_completed(self):
+        """
+        Return true if reservation is accepted, and now it's after reservation's end
+        """
+        return self.status == ReservationStatus.accepted[0] and self.end <= timezone.now()
+
+    def related_reservations(self):
+        """
+        Return accepted reservations for same time
+        """
+        if self.status != ReservationStatus.accepted[0]:
+            raise Exception()
+        overlapping = ~(Q(end__lt=self.start) | Q(start__gt=self.end))
+        return Reservation.objects.filter(overlapping, status=ReservationStatus.accepted[0])
+
+    def length(self):
+        delta = self.end - self.start
+        return delta.days
 
 class ReservationAdmin(admin.ModelAdmin):
     list_display = 'stuff', 'user', 'status', 'supervisor_notes', 'start', 'end', 'date'
     search_fields = 'stuff__name', 'user__pk', 'user__email'
     list_filter = 'status', 'start', 'end'
+
+    actions = ['confirm']
+
+    def confirm(self, request, queryset):
+        for reservation in queryset:
+            reservation.confirm_reservation()
+    confirm.short_description=u'Zatwierdź wybrane rezerwacje'
 
 
 admin.site.register(Reservation, ReservationAdmin)
@@ -184,14 +224,23 @@ class SaldoChange(dm.Model):
     note = dm.TextField()
     reservation = dm.ForeignKey(Reservation, null=True)
 
-    def create_change(self, user, author, note=None, value=None, reservation=None):
-        if reservation and value:
-            raise ValidationError(u'Zmiana dotycząca rezerwacji ma automatyczną liczbę godzinek.')
-        if reservation:
-            value = reservation.cost
-        change = SaldoChange(user=user, value=value, author=author, note=note, reservation=reservation)
-        user.saldo += value
-        return change
+    @staticmethod
+    def create_change(user, author, value, note=None):
+        return SaldoChange(user=user, value=value, author=author, note=note)
 
+    @staticmethod
+    def create_for_reservation(reservation, author, note=None):
+        return SaldoChange(
+            user=reservation.user,
+            value=-reservation.cost,
+            author=author,
+            note=note,
+            reservation=reservation)
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if self.pk is not None:
+            raise Exception(u'Cannot update SaldoChange')
+        super(SaldoChange, self).save(force_insert, force_update, using, update_fields)
 
 admin.site.register(SaldoChange)

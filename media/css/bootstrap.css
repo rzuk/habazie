@@ -6305,3 +6305,8 @@ button.close {
     overflow: visible !important;
   }
 }
+
+form input[type='number']{
+    padding: 0px;
+    margin: 0px;
+}

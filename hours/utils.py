@@ -1,7 +1,12 @@
+# -*- coding: utf-8 -*-
 import calendar
 import datetime
+import logging
+from django.utils import timezone
 
 __author__ = 'rzuk'
+
+logger = logging.getLogger(__name__)
 
 
 def chunks(l, n):
@@ -47,7 +52,9 @@ class Calendar:
     def apply_reservations(self, reservations):
         for day in self.days:
             for reservation in reservations:
-                if reservation.start.date() <= day.date <= reservation.end.date():
+                start_date = timezone.localtime(reservation.start).date()
+                end_date = timezone.localtime(reservation.end).date()
+                if start_date <= day.date <= end_date:
                     day.reservations.append(reservation)
 
 

@@ -1,11 +1,13 @@
 {% extends "item.html" %}
+{% load bootstrap_toolkit %}
 
 {% block reservations_managment %}
 
 <h3>Edytuj rezerwację</h3>
 <form action="{% url 'manage_reservation' reservation.id %}" method="post">
     {% csrf_token %}
-    {{ edit_form }}
+    {% bootstrap_form edit_form layout="vertical" %}
+{#    {{ edit_form|as_bootstrap }}#}
     <input name="edit" type="submit" value="Zapisz" />
     <script type="text/javascript">
         $(function() {

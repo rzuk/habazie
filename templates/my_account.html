@@ -8,7 +8,29 @@ Aktualna liczba godzinek: {{ user.saldo }}
 </div>
 
 <div id="reservations">
+{% if recent_reservations %}
 Ostatnie rezerwacje
+<table class='table table-striped'>
+<thead>
+    <tr>
+        <td>sprzęt</td>
+        <td>początek</td>
+        <td>koniec</td>
+        <td>status</td>
+    </tr>
+</thead>
+    {% for reservation in recent_reservations %}
+    <tr>
+        <td><a href="{% url 'manage_reservation' reservation.id %}">{{ reservation.stuff }}</a></td>
+        <td>{{ reservation.start }}</td>
+        <td>{{ reservation.end }}</td>
+        <td>{{ reservation.status }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endif %}
+
 </div>
 
 {% endblock %}

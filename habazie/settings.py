@@ -18,12 +18,13 @@ DATABASES = {
         'USER': 'rzuk',
         'PASSWORD': 'Makatka',
         'HOST': 'localhost',
+        'TEST_COLLATION': 'utf8_polish_ci'
     }
 }
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1']
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -55,7 +56,7 @@ MEDIA_ROOT = '/home/rzuk/myprojects/habazie/media/'
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
 # Examples: "http://example.com/media/", "http://media.example.com/"
-MEDIA_URL = 'http://localhost:8000/static/'
+MEDIA_URL = 'http://habazie:8000/static/'
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
@@ -100,7 +101,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     # Uncomment the next line for simple clickjacking protection:
-    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
 ROOT_URLCONF = 'habazie.urls'
@@ -124,7 +125,27 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
     'hours',
     'south',
+    'allaccess',
+    'bootstrap_toolkit',
 )
+
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.contrib.auth.context_processors.auth',
+    'django.core.context_processors.debug',
+    'django.core.context_processors.i18n',
+    'django.core.context_processors.media',
+    'django.core.context_processors.static',
+    'django.core.context_processors.tz',
+    'django.core.context_processors.request',
+    'django.contrib.messages.context_processors.messages',
+
+)
+
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'allaccess.backends.AuthorizedServiceBackend',
+)
+
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
@@ -144,6 +165,10 @@ LOGGING = {
             'level': 'ERROR',
             'filters': ['require_debug_false'],
             'class': 'django.utils.log.AdminEmailHandler'
+        },
+        'stream' : {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler'
         }
     },
     'loggers': {
@@ -152,8 +177,17 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
+        '': {
+            'handlers': ['stream'],
+            'level': 'INFO',
+            'propagate': True
+        },
     }
 }
 
 LOGIN_URL = '/login'
+LOGIN_REDIRECT_URL = '/'
 AUTH_USER_MODEL = 'hours.User'
+
+FACEBOOK_APP_ID = '1385053498390465'
+FACEBOOK_APP_SECRET = 'f63f11c2e84c63c56b4cd4c4b3b572d0'

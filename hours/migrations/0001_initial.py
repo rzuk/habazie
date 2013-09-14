@@ -21,26 +21,41 @@ class Migration(SchemaMigration):
             ('is_staff', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('is_active', self.gf('django.db.models.fields.BooleanField')(default=True)),
             ('date_joined', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
+            ('about_me', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('facebook_id', self.gf('django.db.models.fields.BigIntegerField')(unique=True, null=True, blank=True)),
+            ('access_token', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('facebook_name', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
+            ('facebook_profile_url', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('website_url', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('blog_url', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('date_of_birth', self.gf('django.db.models.fields.DateField')(null=True, blank=True)),
+            ('gender', self.gf('django.db.models.fields.CharField')(max_length=1, null=True, blank=True)),
+            ('raw_data', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('facebook_open_graph', self.gf('django.db.models.fields.NullBooleanField')(null=True, blank=True)),
+            ('new_token_required', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('image', self.gf('django.db.models.fields.files.ImageField')(max_length=255, null=True, blank=True)),
             ('saldo', self.gf('django.db.models.fields.DecimalField')(default=0, max_digits=5, decimal_places=2)),
             ('nick', self.gf('django.db.models.fields.CharField')(default='', max_length=20)),
         ))
         db.send_create_signal(u'hours', ['User'])
 
         # Adding M2M table for field groups on 'User'
-        db.create_table(u'hours_user_groups', (
+        m2m_table_name = db.shorten_name(u'hours_user_groups')
+        db.create_table(m2m_table_name, (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
             ('user', models.ForeignKey(orm[u'hours.user'], null=False)),
             ('group', models.ForeignKey(orm[u'auth.group'], null=False))
         ))
-        db.create_unique(u'hours_user_groups', ['user_id', 'group_id'])
+        db.create_unique(m2m_table_name, ['user_id', 'group_id'])
 
         # Adding M2M table for field user_permissions on 'User'
-        db.create_table(u'hours_user_user_permissions', (
+        m2m_table_name = db.shorten_name(u'hours_user_user_permissions')
+        db.create_table(m2m_table_name, (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
             ('user', models.ForeignKey(orm[u'hours.user'], null=False)),
             ('permission', models.ForeignKey(orm[u'auth.permission'], null=False))
         ))
-        db.create_unique(u'hours_user_user_permissions', ['user_id', 'permission_id'])
+        db.create_unique(m2m_table_name, ['user_id', 'permission_id'])
 
         # Adding model 'StuffCategory'
         db.create_table(u'hours_stuffcategory', (
@@ -69,6 +84,7 @@ class Migration(SchemaMigration):
             ('status', self.gf('django.db.models.fields.CharField')(default='U', max_length=20)),
             ('cost', self.gf('django.db.models.fields.DecimalField')(default=0, max_digits=5, decimal_places=2)),
             ('supervisor_notes', self.gf('django.db.models.fields.TextField')(blank=True)),
+            ('user_notes', self.gf('django.db.models.fields.TextField')(blank=True)),
             ('date', self.gf('django.db.models.fields.DateTimeField')()),
         ))
         db.send_create_signal(u'hours', ['Reservation'])
@@ -91,10 +107,10 @@ class Migration(SchemaMigration):
         db.delete_table(u'hours_user')
 
         # Removing M2M table for field groups on 'User'
-        db.delete_table('hours_user_groups')
+        db.delete_table(db.shorten_name(u'hours_user_groups'))
 
         # Removing M2M table for field user_permissions on 'User'
-        db.delete_table('hours_user_user_permissions')
+        db.delete_table(db.shorten_name(u'hours_user_user_permissions'))
 
         # Deleting model 'StuffCategory'
         db.delete_table(u'hours_stuffcategory')
@@ -140,7 +156,8 @@ class Migration(SchemaMigration):
             'status': ('django.db.models.fields.CharField', [], {'default': "'U'", 'max_length': '20'}),
             'stuff': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['hours.Stuff']"}),
             'supervisor_notes': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['hours.User']"})
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['hours.User']"}),
+            'user_notes': ('django.db.models.fields.TextField', [], {'blank': 'True'})
         },
         u'hours.saldochange': {
             'Meta': {'object_name': 'SaldoChange'},
@@ -167,21 +184,34 @@ class Migration(SchemaMigration):
         },
         u'hours.user': {
             'Meta': {'object_name': 'User'},
+            'about_me': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'access_token': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'blog_url': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
+            'date_of_birth': ('django.db.models.fields.DateField', [], {'null': 'True', 'blank': 'True'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
+            'facebook_id': ('django.db.models.fields.BigIntegerField', [], {'unique': 'True', 'null': 'True', 'blank': 'True'}),
+            'facebook_name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'facebook_open_graph': ('django.db.models.fields.NullBooleanField', [], {'null': 'True', 'blank': 'True'}),
+            'facebook_profile_url': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
+            'gender': ('django.db.models.fields.CharField', [], {'max_length': '1', 'null': 'True', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'image': ('django.db.models.fields.files.ImageField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
+            'new_token_required': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'nick': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '20'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
+            'raw_data': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'saldo': ('django.db.models.fields.DecimalField', [], {'default': '0', 'max_digits': '5', 'decimal_places': '2'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
-            'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
+            'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'}),
+            'website_url': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'})
         }
     }
 

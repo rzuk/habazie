@@ -2,11 +2,12 @@
 from datetime import datetime, date
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
+from django.forms.formsets import formset_factory
 from django.http import HttpResponse
 from django.http.response import HttpResponseRedirect
 from django.template import loader, RequestContext
 from django.utils.http import urlencode
-from hours.forms import ReservationForm, ReservationEditionForm
+from hours.forms import ReservationForm, ReservationEditionForm, ReturnSingleStuffForm
 from hours.models import Stuff, StuffCategory, Reservation
 from hours.utils import Calendar
 
@@ -15,6 +16,12 @@ from hours.utils import Calendar
 def my_account(request):
     context = __base_context(request)
     template = loader.get_template('my_account.html')
+    recent_reservations = Reservation.objects.filter(
+        user=request.user
+    ).order_by('-date')[:10]
+    context.update({
+        'recent_reservations': recent_reservations
+    })
     return HttpResponse(template.render(context))
 
 
@@ -62,6 +69,8 @@ def item(request, item_id):
 def manage_reservation(request, reservation_id):
     context = __base_context(request)
     instance = Reservation.objects.prefetch_related('stuff').get(pk=reservation_id)
+    if instance.is_completed():
+        return HttpResponseRedirect(reverse(return_form, args=[instance.id]))
     item_obj = instance.stuff
     if 'edit' in request.POST:
         edit_form = ReservationEditionForm(request.POST, instance=instance)
@@ -143,3 +152,16 @@ def _today(hour, minute):
         minute=minute
     )
 
+
+@login_required()
+def return_form(request, reservation_id):
+    reservation = Reservation.objects.get(id=reservation_id)
+    single_form = ReturnSingleStuffForm(request.POST or None)
+    context = __base_context(request)
+    context.update({
+        'related_reservations': reservation.related_reservations(),
+        'single_form': single_form,
+        'form_set': formset_factory(ReturnSingleStuffForm, extra=2)
+    })
+    template = loader.get_template('return_form.html')
+    return HttpResponse(template.render(context))

@@ -8,7 +8,9 @@ class Migration(DataMigration):
 
     def forwards(self, orm):
         "Write your forwards methods here."
-        # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
+        # Note: Don't use "from appname.models import ModelName". 
+        # Use orm.ModelName to refer to models in this application,
+        # and orm['appname.ModelName'] for models in other applications.
 
     def backwards(self, orm):
         "Write your backwards methods here."
@@ -44,7 +46,8 @@ class Migration(DataMigration):
             'status': ('django.db.models.fields.CharField', [], {'default': "'U'", 'max_length': '20'}),
             'stuff': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['hours.Stuff']"}),
             'supervisor_notes': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['hours.User']"})
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['hours.User']"}),
+            'user_notes': ('django.db.models.fields.TextField', [], {'blank': 'True'})
         },
         u'hours.saldochange': {
             'Meta': {'object_name': 'SaldoChange'},
@@ -81,7 +84,6 @@ class Migration(DataMigration):
             'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
-            'nick': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '20'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
             'saldo': ('django.db.models.fields.DecimalField', [], {'default': '0', 'max_digits': '5', 'decimal_places': '2'}),
             'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h3>Formularz zwrotu sprzętu</h3>
+
+{{ form_set.as_table }}
+<form action="#{# {% url 'return_stuff' reservation.id %}#}" method="post" class='form-horizontal'>
+    {% csrf_token %}
+
+<table id='related_reservations_table' class='table table-hover table-bordered'>
+    <thead>
+        <tr>
+            <td></td>
+            <td>sprzęt</td>
+            <td>początek</td>
+            <td>koniec</td>
+            <td>liczba dni</td>
+        </tr>
+    </thead>
+<tbody>
+{% for reservation in related_reservations %}
+    <tr>
+        <td><input id='checked_{{ reservation.id }}' type='checkbox' name='checked' /></td>
+        <td>{{reservation.stuff}}</td>
+        <td>{{ reservation.start }}</td>
+        <td>{{ reservation.end }}</td>
+        <td><div><input type='number' min='0' value='{{ reservation.length }}'/></div></td>
+    </tr>
+    <tr></tr>
+{% endfor %}
+</tbody>
+</table>
+</form>
+
+<script type="text/javascript">
+$(function() {
+  $('#related_reservations_table tr').click(function(event) {
+    if (event.target.type !== 'checkbox') {
+      $(':checkbox', this).trigger('click');
+    }
+  });
+});
+</script>
+
+{% endblock %}

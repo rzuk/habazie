@@ -17,7 +17,7 @@
             </div>
             <div id="collapseTwo" class="accordion-body collapse {% if create_form.display %}in{% endif %}">
                 <div class="accordion-inner">
-                    <form action="{% url 'item' item.id %}" method="post">
+                    <form action method="post">
                         {% csrf_token %}
                         {{ create_form }}
                         <input name="create" type="submit" value="Rezerwuj" />
